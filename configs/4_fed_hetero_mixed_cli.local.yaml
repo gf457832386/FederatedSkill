@@ -1,0 +1,86 @@
+# Setting 4: Heterogeneous federation, native CLIs — each worker on its own CLI.
+#
+# Three different backbone models, each driving its NATIVE CLI:
+#   - qwen3.6-plus → qwen-code
+#   - glm-5        → claude-code
+#   - kimi-k2.5    → kimi-cli
+# This is the Table 2 (mixed-CLI) setting from the paper. Federation now has
+# to overcome BOTH cross-model AND cross-CLI dialect mismatch. Personalized
+# merging (cloud_skill_merge with merger_mode=unshared) becomes essential —
+# a peer's SKILL.md that "works on claude-code" may have to be rewritten in
+# qwen-code idiom before qwen3.6-plus can use it.
+#
+# Launch:
+#   cd federate_skill
+#   PYTHONPATH=. python -m skillfl.skillflow_adapter.cli \
+#       --config configs/4_fed_hetero_mixed_cli.local.yaml \
+#       --max-parallel-groups 1
+
+job_name: fed-hetero-mixed-cli-M3
+workers:
+  - id: u0
+    agent:
+      # qwen-code: OpenAI-protocol native (not Anthropic). The container's
+      # llm-retry-proxy translates so we can keep the rest of the federation
+      # plumbing identical to the claude-code workers.
+      import_path: libs.harbor_noinstall_agents.agents:NoInstallQwenCode
+      model_name: qwen3.6-plus
+      env:
+        OPENAI_API_KEY: "$DASHSCOPE_KEY"
+        OPENAI_BASE_URL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      kwargs:
+        api_key: "$DASHSCOPE_KEY"
+        base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  - id: u1
+    agent:
+      import_path: libs.harbor_noinstall_agents.agents:NoInstallClaudeCode
+      model_name: glm-5
+      env:
+        ANTHROPIC_API_KEY: "$DASHSCOPE_KEY"
+        ANTHROPIC_BASE_URL: "https://dashscope.aliyuncs.com/apps/anthropic"
+        ANTHROPIC_MAX_RETRIES: "999"
+      kwargs: {}
+  - id: u2
+    agent:
+      import_path: libs.harbor_noinstall_agents.agents:NoInstallKimiCli
+      model_name: openai/kimi-k2.5
+      env:
+        OPENAI_API_KEY: "$MOONSHOT_KEY"
+        OPENAI_BASE_URL: "https://api.moonshot.ai/v1"
+      kwargs:
+        api_key: "$MOONSHOT_KEY"
+        base_url: "https://api.moonshot.ai/v1"
+
+partitioner: replicate
+sync_schedule: every_task
+merger_mode: unshared
+isolated_worker_skills: true
+force_shared_env: true
+
+merger: cloud_skill_merge
+merger_skill:
+  agent_runner: podman
+  podman_bin: docker
+  podman_image: localhost/harbor-prebuilt:task-ab362a9bac356807
+  merger_model: glm-5
+  merger_env:
+    ANTHROPIC_API_KEY: "$DASHSCOPE_KEY"
+    ANTHROPIC_BASE_URL: "https://dashscope.aliyuncs.com/apps/anthropic"
+    ANTHROPIC_MAX_RETRIES: "999"
+  max_turns: 30
+  wall_clock_sec: 600
+merger_llm:
+  max_tokens: 16384
+
+# Per-worker patcher routing kicks in automatically: each worker's
+# trajectory is distilled by that worker's own model (so qwen3.6-plus
+# summarises qwen's run, kimi summarises kimi's, etc.). The block below
+# is just the fallback creds the runner uses if a worker's env block is
+# missing API material.
+patcher:
+  api_base: "https://dashscope.aliyuncs.com/apps/anthropic"
+  api_key: "$DASHSCOPE_KEY"
+  temperature: 0.2
+
+datasets:
+  - test_tasks/Production-Capacity-Planning

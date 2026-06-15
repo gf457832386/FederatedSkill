@@ -1,0 +1,70 @@
+# Setting 3: Heterogeneous federation, single CLI — qwen + glm + kimi all on claude-code.
+#
+# Three different backbone models share one CLI (claude-code). This is the
+# Table 1 (CC-CLI) setting from the paper. Federation now has to overcome
+# cross-model dialect mismatch; the CLI scaffold is held constant.
+#
+# Launch:
+#   cd federate_skill
+#   PYTHONPATH=. python -m skillfl.skillflow_adapter.cli \
+#       --config configs/3_fed_hetero_cc.local.yaml \
+#       --max-parallel-groups 1
+
+job_name: fed-hetero-cc-M3
+workers:
+  - id: u0
+    agent:
+      import_path: libs.harbor_noinstall_agents.agents:NoInstallClaudeCode
+      model_name: qwen3.6-plus
+      env:
+        ANTHROPIC_API_KEY: "$DASHSCOPE_KEY"
+        ANTHROPIC_BASE_URL: "https://dashscope.aliyuncs.com/apps/anthropic"
+        ANTHROPIC_MAX_RETRIES: "999"
+      kwargs: {}
+  - id: u1
+    agent:
+      import_path: libs.harbor_noinstall_agents.agents:NoInstallClaudeCode
+      model_name: glm-5
+      env:
+        ANTHROPIC_API_KEY: "$DASHSCOPE_KEY"
+        ANTHROPIC_BASE_URL: "https://dashscope.aliyuncs.com/apps/anthropic"
+        ANTHROPIC_MAX_RETRIES: "999"
+      kwargs: {}
+  - id: u2
+    agent:
+      import_path: libs.harbor_noinstall_agents.agents:NoInstallClaudeCode
+      model_name: kimi-k2.5
+      env:
+        ANTHROPIC_API_KEY: "$MOONSHOT_KEY"
+        ANTHROPIC_BASE_URL: "https://api.moonshot.ai/anthropic"
+        ANTHROPIC_MAX_RETRIES: "999"
+      kwargs: {}
+
+partitioner: replicate
+sync_schedule: every_task
+merger_mode: unshared
+isolated_worker_skills: true
+force_shared_env: true
+
+merger: cloud_skill_merge
+merger_skill:
+  agent_runner: podman
+  podman_bin: docker
+  podman_image: localhost/harbor-prebuilt:task-ab362a9bac356807
+  merger_model: glm-5
+  merger_env:
+    ANTHROPIC_API_KEY: "$DASHSCOPE_KEY"
+    ANTHROPIC_BASE_URL: "https://dashscope.aliyuncs.com/apps/anthropic"
+    ANTHROPIC_MAX_RETRIES: "999"
+  max_turns: 30
+  wall_clock_sec: 600
+merger_llm:
+  max_tokens: 16384
+
+patcher:
+  api_base: "https://dashscope.aliyuncs.com/apps/anthropic"
+  api_key: "$DASHSCOPE_KEY"
+  temperature: 0.2
+
+datasets:
+  - test_tasks/Production-Capacity-Planning

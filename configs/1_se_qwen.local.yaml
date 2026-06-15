@@ -1,0 +1,48 @@
+# Setting 1: Self-Evolve (SE) — single-worker baseline.
+#
+# Iterative runner: one worker repeatedly solves tasks from a family,
+# after every trial a per-worker patcher distills the trajectory into a
+# skill patch and applies it to the worker's shared_skills/ library.
+# No federation, no merger — this is the within-worker only baseline.
+#
+# Launch:
+#   python iterative_shared_skills_runner.py \
+#       --config configs/1_se_qwen.local.yaml \
+#       --max-parallel-groups 1
+#
+# To switch the worker model, change `model_name` and the env block below.
+# Example variants used in the paper:
+#   - qwen3.6-plus  via dashscope.aliyuncs.com   (this file)
+#   - glm-5         via dashscope.aliyuncs.com   (DASHSCOPE_KEY same)
+#   - kimi-k2.5     via api.moonshot.ai/anthropic (uses MOONSHOT_KEY)
+
+job_name: se-baseline-qwen3.6-plus
+agents:
+  - import_path: libs.harbor_noinstall_agents.agents:NoInstallClaudeCode
+    model_name: qwen3.6-plus
+    env:
+      ANTHROPIC_API_KEY: "$DASHSCOPE_KEY"
+      ANTHROPIC_BASE_URL: "https://dashscope.aliyuncs.com/apps/anthropic"
+      ANTHROPIC_MAX_RETRIES: "999"
+    kwargs: {}
+
+environment:
+  allow_internet: true
+  force_build: false
+  delete: false
+
+orchestrator:
+  type: local
+  n_concurrent_trials: 1
+  quiet: false
+
+# Patcher config (per-trial trajectory → skill patch). Reuses worker creds
+# by default; you can override here if the patcher needs its own routing.
+patcher:
+  temperature: 0.2
+
+# Run one family per launch — re-launch with a different `datasets:`
+# block to cover the remaining 19 families. Family ordering inside a run
+# follows `ALL_TASK_DIFFICULTY_RANKING.json` in each family directory.
+datasets:
+  - path: test_tasks/Production-Capacity-Planning

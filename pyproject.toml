@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "federate_skill"
+version = "0.1.0"
+description = "FederatedSkill: Federated Learning for Agentic Skill Evolution"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.12"
+authors = [
+    {name = "Jingbo Yang"},
+    {name = "Guanyu Yao", email = "gyao@ucsb.edu"},
+    {name = "Yang Zhang"},
+    {name = "Ramana Rao Kompella"},
+    {name = "Gaowen Liu"},
+    {name = "Shiyu Chang"},
+]
+dependencies = [
+    # Trial orchestration. Pinned to the harbor commit our experiments ran
+    # against; SkillFlow upstream doesn't pin and floats to latest, which
+    # has occasionally broken its libs/harbor_noinstall_agents/ imports.
+    # Listing the pin here lets `uv pip install -e .` reconcile harbor to
+    # our known-good version in the SkillFlow venv.
+    "harbor @ git+https://github.com/laude-institute/harbor.git@9ee6790376583608f541c133d1af2dae47b8fc32",
+    # Per-trial patcher LLM client (used by our patcher_bridge.py).
+    "litellm>=1.70.0",
+    # Config + retry plumbing
+    "pyyaml>=6.0.0",
+    "tenacity>=9.0.0",
+    "pydantic>=2.8.0",
+    # HuggingFace CLI — `hf download` pulls test_tasks/ from
+    # https://huggingface.co/datasets/zhang-ziao/SkillFlow-Task
+    "huggingface_hub[cli]>=0.27.0",
+    # Used by some task verifiers
+    "openpyxl>=3.1.0",
+    "numpy>=2.0.0",
+]
+
+[project.optional-dependencies]
+analysis = [
+    "matplotlib>=3.9.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["skillfl*"]
+
+[tool.setuptools.package-data]
+"skillfl.skillflow_adapter" = ["merge_skill/SKILL.md", "merge_skill/scripts/*", "task_update_skill/SKILL.md"]

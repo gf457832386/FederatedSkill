@@ -1,0 +1,82 @@
+# Setting 2: Homogeneous federation — three GLM-5 workers, all via claude-code.
+#
+# All three workers use the same (model, CLI) pair: glm-5 + claude-code. This
+# is the "best case" for federation: peers speak the same dialect, so peer
+# patches transfer cleanly. Use this to isolate "federation helps" from
+# "cross-model adaptation helps".
+#
+# Launch:
+#   cd federate_skill
+#   PYTHONPATH=. python -m skillfl.skillflow_adapter.cli \
+#       --config configs/2_fed_3glm_cc.local.yaml \
+#       --max-parallel-groups 1
+
+job_name: fed-3glm-cc-M3
+workers:
+  - id: u0
+    agent:
+      import_path: libs.harbor_noinstall_agents.agents:NoInstallClaudeCode
+      model_name: glm-5
+      env:
+        ANTHROPIC_API_KEY: "$DASHSCOPE_KEY"
+        ANTHROPIC_BASE_URL: "https://dashscope.aliyuncs.com/apps/anthropic"
+        ANTHROPIC_MAX_RETRIES: "999"
+      kwargs: {}
+  - id: u1
+    agent:
+      import_path: libs.harbor_noinstall_agents.agents:NoInstallClaudeCode
+      model_name: glm-5
+      env:
+        ANTHROPIC_API_KEY: "$DASHSCOPE_KEY"
+        ANTHROPIC_BASE_URL: "https://dashscope.aliyuncs.com/apps/anthropic"
+        ANTHROPIC_MAX_RETRIES: "999"
+      kwargs: {}
+  - id: u2
+    agent:
+      import_path: libs.harbor_noinstall_agents.agents:NoInstallClaudeCode
+      model_name: glm-5
+      env:
+        ANTHROPIC_API_KEY: "$DASHSCOPE_KEY"
+        ANTHROPIC_BASE_URL: "https://dashscope.aliyuncs.com/apps/anthropic"
+        ANTHROPIC_MAX_RETRIES: "999"
+      kwargs: {}
+
+# Replicate: each task is given to all 3 workers (M3-replicate).
+# Sync every task so peers see each round's patches at the next round's start.
+partitioner: replicate
+sync_schedule: every_task
+
+# unshared = personalized: each worker has its own library; merger runs per
+# target worker. isolated_worker_skills=true means workers don't share
+# libraries at task time — only patches flow through the merger.
+merger_mode: unshared
+isolated_worker_skills: true
+force_shared_env: true
+
+merger: cloud_skill_merge
+merger_skill:
+  # The cloud merger runs an in-container claude-code agent that follows
+  # `skillfl/skillflow_adapter/merge_skill/SKILL.md`. Use a podman image
+  # pre-built with the agent runtime (see README → "Container images").
+  agent_runner: podman
+  podman_bin: docker     # or /path/to/podman
+  podman_image: localhost/harbor-prebuilt:task-ab362a9bac356807
+  merger_model: glm-5
+  merger_env:
+    ANTHROPIC_API_KEY: "$DASHSCOPE_KEY"
+    ANTHROPIC_BASE_URL: "https://dashscope.aliyuncs.com/apps/anthropic"
+    ANTHROPIC_MAX_RETRIES: "999"
+  max_turns: 30
+  wall_clock_sec: 600
+merger_llm:
+  max_tokens: 16384
+
+# Patcher creds default to each worker's own env. Override here only if
+# the patcher needs a different gateway.
+patcher:
+  api_base: "https://dashscope.aliyuncs.com/apps/anthropic"
+  api_key: "$DASHSCOPE_KEY"
+  temperature: 0.2
+
+datasets:
+  - test_tasks/Production-Capacity-Planning

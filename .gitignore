@@ -1,0 +1,18 @@
+# Created by setup.sh (not part of the release surface)
+external/
+test_tasks/
+.venv
+.env
+
+# Runtime
+logs/
+jobs/
+paper_artifacts/
+*.egg-info/
+__pycache__/
+*.pyc
+
+# Editor / OS junk
+.DS_Store
+.idea/
+.vscode/
