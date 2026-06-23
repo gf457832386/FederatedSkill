@@ -19,7 +19,7 @@ workers:
       model_name: glm-5
       env:
         ANTHROPIC_API_KEY: "$DASHSCOPE_KEY"
-        ANTHROPIC_BASE_URL: "https://www.autodl.art/api/v1/anthropic"
+        ANTHROPIC_BASE_URL: "https://dashscope.aliyuncs.com/apps/anthropic"
         ANTHROPIC_MAX_RETRIES: "999"
       kwargs: {}
   - id: u1
@@ -28,7 +28,7 @@ workers:
       model_name: glm-5
       env:
         ANTHROPIC_API_KEY: "$DASHSCOPE_KEY"
-        ANTHROPIC_BASE_URL: "https://www.autodl.art/api/v1/anthropic"
+        ANTHROPIC_BASE_URL: "https://dashscope.aliyuncs.com/apps/anthropic"
         ANTHROPIC_MAX_RETRIES: "999"
       kwargs: {}
   - id: u2
@@ -37,7 +37,7 @@ workers:
       model_name: glm-5
       env:
         ANTHROPIC_API_KEY: "$DASHSCOPE_KEY"
-        ANTHROPIC_BASE_URL: "https://www.autodl.art/api/v1/anthropic"
+        ANTHROPIC_BASE_URL: "https://dashscope.aliyuncs.com/apps/anthropic"
         ANTHROPIC_MAX_RETRIES: "999"
       kwargs: {}
 
@@ -64,7 +64,7 @@ merger_skill:
   merger_model: glm-5
   merger_env:
     ANTHROPIC_API_KEY: "$DASHSCOPE_KEY"
-    ANTHROPIC_BASE_URL: "https://www.autodl.art/api/v1/anthropic"
+    ANTHROPIC_BASE_URL: "https://dashscope.aliyuncs.com/apps/anthropic"
     ANTHROPIC_MAX_RETRIES: "999"
   max_turns: 30
   wall_clock_sec: 600
@@ -74,7 +74,7 @@ merger_llm:
 # Patcher creds default to each worker's own env. Override here only if
 # the patcher needs a different gateway.
 patcher:
-  api_base: "https://www.autodl.art/api/v1/anthropic"
+  api_base: "https://dashscope.aliyuncs.com/apps/anthropic"
   api_key: "$DASHSCOPE_KEY"
   temperature: 0.2
 

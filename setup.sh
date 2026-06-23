@@ -146,6 +146,7 @@ else
     set +e
     .venv/bin/hf download "$HF_DATASET" --repo-type dataset --local-dir "$STAGE_DIR"
     DL_RC=$?
+
     set -e
     if [ -d "$STAGE_DIR/test_tasks" ]; then
         N_FAM="$(ls "$STAGE_DIR/test_tasks" 2>/dev/null | wc -l)"

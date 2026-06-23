@@ -15,6 +15,8 @@ set -euo pipefail
 # shellcheck source=scripts/_common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 
+cd "$(dirname "$0")/.."
+
 CONFIG="${CONFIG:-configs/1_se_qwen.local.yaml}"
 MAX_PARALLEL_GROUPS="${MAX_PARALLEL_GROUPS:-1}"
 LOG_TAG="${LOG_TAG:-se}"
